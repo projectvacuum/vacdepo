@@ -1,0 +1,121 @@
+#!/usr/bin/python
+#
+#  depo-cgi - HTTPS epository service 
+#
+#  Andrew McNab, University of Manchester.
+#  Copyright (c) 2013-5. All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or
+#  without modification, are permitted provided that the following
+#  conditions are met:
+#
+#    o Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer. 
+#    o Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution. 
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+#  CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+#  INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+#  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+#  BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+#  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+#  TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+#  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+#  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#  POSSIBILITY OF SUCH DAMAGE.
+#
+#              This software is part of the Vac project: 
+#                   http://www.gridpp.ac.uk/vac/
+#
+
+import os
+import re
+import sys
+import time
+
+if '/../' in os.environ['REQUEST_URI']:
+  # Don't even go there...
+  print 'Status: 404 Not Found'
+  print
+  sys.exit(0)
+
+if 'SSL_CLIENT_S_DN' not in os.environ:
+  print 'Status: 403 Forbidden - no client X.509 authentication'
+  print
+  sys.exit(0)
+
+try:
+  pathHostName = os.environ['REQUEST_URI'].split('/')[1]
+  filePath = os.environ['REQUEST_URI'].replace('//','/').split('?')[0]
+except:
+  print 'Status: 404 Not Found'
+  print
+  sys.exit(0)
+
+try:
+  clientHostName = re.search('/CN=([A-Za-z0-9.-]*)', os.environ['SSL_CLIENT_S_DN']).group(1).lower()
+except:
+  print 'Status: 403 Forbidden - no CN=hostname given'
+  print
+  sys.exit(0)
+
+if clientHostName != pathHostName:
+  print 'Status: 403 Forbidden - client X.509 does not match path'
+  print
+  sys.exit(0)
+
+if os.environ['REQUEST_METHOD'] == 'GET' or os.environ['REQUEST_METHOD'] == 'HEAD':
+
+  absoluteFilePath = os.environ['DOCUMENT_ROOT'] + '/' + filePath
+  
+  if os.path.isfile(absoluteFilePath):
+    print 'Status: 200 OK'
+    stat = os.stat(absoluteFilePath)
+    print 'Content-Length: ' + str(stat.st_size)
+    print 'Last-Modified: ' + time.strftime("%a, %d %b %Y %T GMT", time.gmtime(stat.st_mtime))
+    print
+  
+    if os.environ['REQUEST_METHOD'] == 'GET':
+      try:
+        print open(absoluteFilePath, 'r').read()
+      except:
+        pass
+
+  else:
+    print 'Status: 403 Forbidden'
+    print
+
+  sys.exit(0)
+  
+if os.environ['REQUEST_METHOD'] == 'PUT':
+
+  absoluteFilePath = os.environ['DOCUMENT_ROOT'] + '/' + filePath
+
+  try:
+    os.makedirs('/'.join(absoluteFilePath.split('/')[:-1]))
+  except:
+    pass
+
+  try:
+    f = open(absoluteFilePath, 'w')
+    f.write(sys.stdin.read())
+    f.close()
+  except:
+    print 'Status: 500 Internal Server Error writing file'
+    print
+  else:
+    print 'Status: 200 OK'  
+    print
+
+  sys.exit(0)
+  
+print 'Status: 405 Method not allowed'
+print
+sys.exit(0)
