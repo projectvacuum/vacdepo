@@ -89,7 +89,7 @@ if os.environ['REQUEST_METHOD'] == 'GET' or os.environ['REQUEST_METHOD'] == 'HEA
         pass
 
   else:
-    print 'Status: 403 Forbidden'
+    print 'Status: 404 Not Found'
     print
 
   sys.exit(0)
