@@ -44,11 +44,13 @@ if '/../' in os.environ['REQUEST_URI']:
   # Don't even go there...
   print 'Status: 404 Not Found'
   print
+  print 'Not Found'
   sys.exit(0)
 
 if 'SSL_CLIENT_S_DN' not in os.environ:
   print 'Status: 403 Forbidden - no client X.509 authentication'
   print
+  print 'Forbidden - no client X.509 authentication'
   sys.exit(0)
 
 try:
@@ -57,18 +59,7 @@ try:
 except:
   print 'Status: 404 Not Found'
   print
-  sys.exit(0)
-
-try:
-  clientHostName = re.search('/CN=([A-Za-z0-9.-]*)', os.environ['SSL_CLIENT_S_DN']).group(1).lower()
-except:
-  print 'Status: 403 Forbidden - no CN=hostname in X.509 DN'
-  print
-  sys.exit(0)
-
-if clientHostName != pathHostName:
-  print 'Status: 403 Forbidden - client X.509 does not match path'
-  print
+  print 'Not Found'
   sys.exit(0)
 
 if os.environ['REQUEST_METHOD'] == 'GET' or os.environ['REQUEST_METHOD'] == 'HEAD':
@@ -91,9 +82,26 @@ if os.environ['REQUEST_METHOD'] == 'GET' or os.environ['REQUEST_METHOD'] == 'HEA
   else:
     print 'Status: 404 Not Found'
     print
+    print 'Not Found'
 
   sys.exit(0)
+
+# Writing methods have extra restrictions
   
+try:
+  clientHostName = re.search('/CN=([A-Za-z0-9.-]*)', os.environ['SSL_CLIENT_S_DN']).group(1).lower()
+except:
+  print 'Status: 403 Forbidden - no CN=hostname in X.509 DN'
+  print
+  print 'Forbidden - no CN=hostname in X.509 DN'
+  sys.exit(0)
+
+if clientHostName != pathHostName:
+  print 'Status: 403 Forbidden - client X.509 does not match path'
+  print
+  print 'Forbidden - client X.509 does not match path'
+  sys.exit(0)
+
 if os.environ['REQUEST_METHOD'] == 'PUT':
 
   absoluteFilePath = os.environ['DOCUMENT_ROOT'] + '/' + filePath
@@ -110,6 +118,7 @@ if os.environ['REQUEST_METHOD'] == 'PUT':
   except:
     print 'Status: 500 Internal Server Error writing file'
     print
+    print 'Internal Server Error writing file'
   else:
     print 'Status: 200 OK'  
     print
@@ -118,4 +127,5 @@ if os.environ['REQUEST_METHOD'] == 'PUT':
   
 print 'Status: 405 Method not allowed'
 print
+print 'Method not allowed'
 sys.exit(0)
