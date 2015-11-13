@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-#  depo-cgi - HTTPS epository service 
+#  vacdepo-cgi - HTTPS depository service 
 #
 #  Andrew McNab, University of Manchester.
 #  Copyright (c) 2013-5. All rights reserved.
@@ -32,7 +32,7 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 #              This software is part of the Vac project: 
-#                   http://www.gridpp.ac.uk/vac/
+#                   https://www.gridpp.ac.uk/vac/
 #
 
 import os
@@ -62,7 +62,7 @@ except:
 try:
   clientHostName = re.search('/CN=([A-Za-z0-9.-]*)', os.environ['SSL_CLIENT_S_DN']).group(1).lower()
 except:
-  print 'Status: 403 Forbidden - no CN=hostname given'
+  print 'Status: 403 Forbidden - no CN=hostname in X.509 DN'
   print
   sys.exit(0)
 
