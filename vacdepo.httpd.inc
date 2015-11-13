@@ -63,7 +63,7 @@ Redirect / https://depo.gridpp.ac.uk/
 CustomLog logs/http--vacdepo.log combined
 </VirtualHost>
 
-<VirtualHost *:443>
+<VirtualHost depo.gridpp.ac.uk:443>
 Servername   depo.gridpp.ac.uk
 DocumentRoot /var/www/vacdepo
 CustomLog    logs/https-vacdepo.log combined
