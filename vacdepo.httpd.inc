@@ -35,7 +35,7 @@
 #
 #  Apache httpd.conf include file for VacDepo
 #
-#  This file should placed at /etc/httpd/vacproject.conf.d/vacdepo.conf
+#  This file should placed at /etc/httpd/includes/vacdepo.httpd.inc
 #  where it will be loaded by the common Vac Project httpd.conf
 #
 #  Place vacdepo.cert.pem and vacdepo.key.pem in /etc/grid-security
