@@ -39,6 +39,7 @@ import os
 import re
 import sys
 import time
+import tempfile
 
 if '/../' in os.environ['REQUEST_URI']:
   # Don't even go there...
@@ -111,18 +112,27 @@ if os.environ['REQUEST_METHOD'] == 'PUT':
   except:
     pass
 
+  tempFileName = None
+
   try:
-    f = open(absoluteFilePath, 'w')
-    f.write(sys.stdin.read())
-    f.close()
+    # Try atomic update of absoluteFilePath using a temporary file and a rename
+    fd, tempFileName = tempfile.mkstemp(prefix = '/'.join(absoluteFilePath.split('/')[:-1]) + '/.vacdepo.')
+    os.write(fd, sys.stdin.read())
+    os.close(fd)
+    os.rename(tempFileName, absoluteFilePath)
   except:
+    try:
+      os.remove(tempFileName)
+    except:
+      pass
+
     print 'Status: 500 Internal Server Error writing file'
     print
     print 'Internal Server Error writing file'
   else:
     print 'Status: 200 OK'  
     print
-
+    
   sys.exit(0)
   
 print 'Status: 405 Method not allowed'
