@@ -35,8 +35,10 @@
 #
 #  Apache httpd.conf include file for VacDepo
 #
-#  This file should placed at /etc/httpd/includes/vacdepo.httpd.inc
+#  This file should be copied to /etc/httpd/includes/vacdepo.httpd.inc
 #  where it will be loaded by the common Vac Project httpd.conf
+#  The depo.gridpp.ac.uk hostnames in this file  must be replaced 
+#  with the hostname of your depository service.
 #
 #  Place vacdepo.cert.pem and vacdepo.key.pem in /etc/grid-security
 #  and install the CA files in /etc/grid-security/certificates
@@ -72,13 +74,7 @@ CustomLog    logs/https-vacdepo.log combined
 Options Indexes
 </Directory>
 
-# This allows directory browsing and files are
-# served by Apache code rather than vacdepo-cgi
-# Will go back to vacdepo-cgi doing GETs too in
-# the future.
-#
-ScriptAlias /vacdepo-cgi /usr/sbin/vacdepo-cgi
-Script PUT  /vacdepo-cgi
+ScriptAliasMatch ^/.* /usr/sbin/vacdepo-cgi
 
 SSLEngine               on
 SSLCertificateFile      /etc/grid-security/vacdepo.cert.pem

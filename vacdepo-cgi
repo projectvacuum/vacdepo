@@ -71,6 +71,7 @@ if os.environ['REQUEST_METHOD'] == 'GET' or os.environ['REQUEST_METHOD'] == 'HEA
     print 'Status: 200 OK'
     stat = os.stat(absoluteFilePath)
     print 'Content-Length: ' + str(stat.st_size)
+    print 'Content-Type: text/plain'
     print 'Last-Modified: ' + time.strftime("%a, %d %b %Y %T GMT", time.gmtime(stat.st_mtime))
     print
   
@@ -79,6 +80,35 @@ if os.environ['REQUEST_METHOD'] == 'GET' or os.environ['REQUEST_METHOD'] == 'HEA
         print open(absoluteFilePath, 'r').read()
       except:
         pass
+
+  elif os.path.isdir(absoluteFilePath) and not os.environ['REQUEST_URI'].endswith('/'):
+    print 'Status: 301 Moved Permanently'
+    print 'Location: https://' + \
+                     os.environ['SERVER_NAME'] + \
+                     ('' if os.environ['SERVER_PORT'] == '443' else (':' + os.environ['SERVER_PORT'])) + \
+                     os.environ['REQUEST_URI'] + '/'
+    print
+
+  elif os.path.isdir(absoluteFilePath):
+    print 'Status: 200 OK'
+    print 'Content-Type: text/html'
+    print
+    print '<html><head><title>Directory ' + os.environ['REQUEST_URI'] + '</title></head>'
+    print '<body><h1>Directory ' + os.environ['REQUEST_URI'] + '</h1>'
+
+    try:
+      dirList = os.listdir(absoluteFilePath)
+    except:
+      pass
+    else:
+      print '<ul>'
+      
+      for fileName in dirList:
+        print '<li><a href="' + fileName + '">' + fileName + '</a></li>'
+      
+      print '</ul>'
+
+    print '</body></html>'
 
   else:
     print 'Status: 404 Not Found'
