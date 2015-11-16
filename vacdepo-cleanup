@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  Cleanup script for VacDepo, to be run from cron (hourly?)
+#  Cleanup script for VacDepo, to be run from cron (daily?)
 #
 #  Andrew McNab, University of Manchester.
 #  Copyright (c) 2013-5. All rights reserved.
@@ -34,12 +34,12 @@
 #  Contacts: Andrew.McNab@cern.ch  https://www.gridpp.ac.uk/vac/
 
 #
-#  Cleanup script for VacDepo, to be run from cron (hourly?)
+#  Cleanup script for VacDepo, to be run from cron (daily?)
 #  Deletes non-directories under $VACDEPO_PATH after $EXPIRY_DAYS
 #  without modification and empty directories after 1 day without
 #  modification.
 #
-#  Copy this file to /etc/cron.hourly to use, changing and change 
+#  Copy this file to /etc/cron.daily to use, changing and change 
 #  the defaults if necessary.
 #
 (
