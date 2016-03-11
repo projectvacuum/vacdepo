@@ -120,7 +120,7 @@ if os.environ['REQUEST_METHOD'] == 'GET' or os.environ['REQUEST_METHOD'] == 'HEA
 # Writing methods have extra restrictions
   
 try:
-  clientHostName = re.search('/CN=([A-Za-z0-9.-]*)', os.environ['SSL_CLIENT_S_DN']).group(1).lower()
+  clientHostName = re.search('/CN=([^/]*)', os.environ['SSL_CLIENT_S_DN']).group(1).lower()
 except:
   print 'Status: 403 Forbidden - no CN=hostname in X.509 DN'
   print
