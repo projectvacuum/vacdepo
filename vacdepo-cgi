@@ -3,7 +3,7 @@
 #  vacdepo-cgi - HTTPS depository service 
 #
 #  Andrew McNab, University of Manchester.
-#  Copyright (c) 2013-5. All rights reserved.
+#  Copyright (c) 2013-6. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or
 #  without modification, are permitted provided that the following
@@ -48,19 +48,20 @@ if '/../' in os.environ['REQUEST_URI']:
   print 'Not Found'
   sys.exit(0)
 
-if 'SSL_CLIENT_S_DN' not in os.environ:
-  print 'Status: 403 Forbidden - no client X.509 authentication'
-  print
-  print 'Forbidden - no client X.509 authentication'
-  sys.exit(0)
-
 try:
-  pathHostName = os.environ['REQUEST_URI'].split('/')[1]
-  filePath = os.environ['REQUEST_URI'].replace('//','/').split('?')[0]
+  firstDir  = os.environ['REQUEST_URI'].split('/')[1]
+  filePath  = os.environ['REQUEST_URI'].replace('//','/').split('?')[0]
 except:
   print 'Status: 404 Not Found'
   print
   print 'Not Found'
+  sys.exit(0)
+
+if os.environ['REQUEST_URI'] == '/':
+  # No browsing of the first level directory names
+  print 'Status: 403 Directory listing forbidden'
+  print
+  print 'Directory listing forbidden'
   sys.exit(0)
 
 if os.environ['REQUEST_METHOD'] == 'GET' or os.environ['REQUEST_METHOD'] == 'HEAD':
@@ -97,16 +98,18 @@ if os.environ['REQUEST_METHOD'] == 'GET' or os.environ['REQUEST_METHOD'] == 'HEA
     print '<body><h1>Directory ' + os.environ['REQUEST_URI'] + '</h1>'
 
     try:
-      dirList = os.listdir(absoluteFilePath)
+      os.chdir(absoluteFilePath)
+      dirList = sorted(os.listdir('.'), key=os.path.getmtime, reverse=True)
     except:
       pass
-    else:
-      print '<ul>'
+    else:    
+      print '<pre>'
       
       for fileName in dirList:
-        print '<li><a href="' + fileName + '">' + fileName + '</a></li>'
+        print time.asctime(time.gmtime(os.path.getmtime(fileName))) \
+              + ' <a href="' + fileName + '">' + fileName + '</a>'
       
-      print '</ul>'
+      print '</pre>'
 
     print '</body></html>'
 
@@ -118,24 +121,33 @@ if os.environ['REQUEST_METHOD'] == 'GET' or os.environ['REQUEST_METHOD'] == 'HEA
   sys.exit(0)
 
 # Writing methods have extra restrictions
-  
-try:
-  clientHostName = re.search('/CN=([^/]*)', os.environ['SSL_CLIENT_S_DN']).group(1).lower()
-except:
-  print 'Status: 403 Forbidden - no CN=hostname in X.509 DN'
+
+if 'SSL_CLIENT_S_DN' not in os.environ or not os.environ['SSL_CLIENT_S_DN']:
+  print 'Status: 403 Forbidden - no client X.509 authentication'
   print
-  print 'Forbidden - no CN=hostname in X.509 DN'
+  print 'Forbidden - no client X.509 authentication'
   sys.exit(0)
 
-if clientHostName != pathHostName:
-  print 'Status: 403 Forbidden - client X.509 does not match path'
+try:
+  # There must be a vacdepo-writers list of X.509 DNs for this first level
+  # directory for writing to be allowed in it
+  accessList = open('/etc/vacdepo-writers/' + firstDir, 'r').read().splitlines()
+except:
+  print 'Status: 403 Forbidden - write access not enabled'
   print
-  print 'Forbidden - client X.509 does not match path'
+  print 'Forbidden - write access not enabled'
+  sys.exit(0)
+
+if not os.environ['SSL_CLIENT_S_DN'] in accessList:
+  # X.509 DN must be on the vacdepo-writers list for this first level directory
+  # for writing here to be allowed
+  print 'Status: 403 Forbidden - write access not allowed'
+  print
+  print 'Forbidden - write access not allowed'
   sys.exit(0)
 
 if os.environ['REQUEST_METHOD'] == 'PUT':
-
-  absoluteFilePath = os.environ['DOCUMENT_ROOT'] + '/' + filePath
+  absoluteFilePath = os.environ['DOCUMENT_ROOT'] + filePath
 
   try:
     os.makedirs('/'.join(absoluteFilePath.split('/')[:-1]))
@@ -150,6 +162,7 @@ if os.environ['REQUEST_METHOD'] == 'PUT':
     os.write(fd, sys.stdin.read())
     os.close(fd)
     os.rename(tempFileName, absoluteFilePath)
+
   except:
     try:
       os.remove(tempFileName)
@@ -159,10 +172,17 @@ if os.environ['REQUEST_METHOD'] == 'PUT':
     print 'Status: 500 Internal Server Error writing file'
     print
     print 'Internal Server Error writing file'
+
   else:
+    # All parent directories get time stamp updated too
+    recursePath = os.environ['DOCUMENT_ROOT']
+    for dir in filePath.split('/')[1:-1]:
+      recursePath += '/' + dir
+      os.utime(recursePath, None)
+
     print 'Status: 200 OK'  
     print
-    
+      
   sys.exit(0)
   
 print 'Status: 405 Method not allowed'
