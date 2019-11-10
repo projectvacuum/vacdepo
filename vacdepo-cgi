@@ -3,7 +3,7 @@
 #  vacdepo-cgi - HTTPS depository service 
 #
 #  Andrew McNab, University of Manchester.
-#  Copyright (c) 2013-6. All rights reserved.
+#  Copyright (c) 2013-9. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or
 #  without modification, are permitted provided that the following
@@ -56,6 +56,29 @@ except:
   print
   print 'Not Found'
   sys.exit(0)
+
+try:
+  # There must be a vacdepo-readers list of X.509 DNs for read control
+  # to be enabled
+  readList = open('/etc/vacdepo-readers/' + firstDir, 'r').read().splitlines()
+except:
+  pass
+else:
+  foundDN = False
+
+  if 'SSL_CLIENT_S_DN' in os.environ and os.environ['SSL_CLIENT_S_DN']:
+    # Look for DN or DN+'/CN=...' (ie proxy) in access list
+    for readListDN in readList:
+      if os.environ['SSL_CLIENT_S_DN'] == readListDN or os.environ['SSL_CLIENT_S_DN'].startswith(readListDN + '/CN='):
+        foundDN = True
+        break
+      
+  if not foundDN:
+    # Unless we found a matching DN then refuse
+    print 'Status: 403 Forbidden'
+    print
+    print 'Forbidden - read access not allowed'
+    sys.exit(0)
 
 if os.environ['REQUEST_URI'] == '/':
   # No browsing of the first level directory names
@@ -131,14 +154,21 @@ if 'SSL_CLIENT_S_DN' not in os.environ or not os.environ['SSL_CLIENT_S_DN']:
 try:
   # There must be a vacdepo-writers list of X.509 DNs for this first level
   # directory for writing to be allowed in it
-  accessList = open('/etc/vacdepo-writers/' + firstDir, 'r').read().splitlines()
+  writeList = open('/etc/vacdepo-writers/' + firstDir, 'r').read().splitlines()
 except:
   print 'Status: 403 Forbidden - write access not enabled'
   print
   print 'Forbidden - write access not enabled'
   sys.exit(0)
 
-if not os.environ['SSL_CLIENT_S_DN'] in accessList:
+# Look for DN or DN+'/CN=...' (ie proxy) in access list
+foundDN = False
+for writeListDN in writeList:
+  if os.environ['SSL_CLIENT_S_DN'] == writeListDN or os.environ['SSL_CLIENT_S_DN'].startswith(writeListDN + '/CN='):
+    foundDN = True
+    break
+
+if not foundDN:
   # X.509 DN must be on the vacdepo-writers list for this first level directory
   # for writing here to be allowed
   print 'Status: 403 Forbidden - write access not allowed'
